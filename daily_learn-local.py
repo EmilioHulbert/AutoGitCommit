@@ -8,13 +8,13 @@ from datetime import datetime
 
 # Logging setup
 logging.basicConfig(
-    filename='/opt/AutoGitCommit/app.log',
+    filename='/home/hulbert/Desktop/daily-learn/app.log',
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 # Configuration
-REPO_PATH = "/opt/AutoGitCommit"
+REPO_PATH = "/home/hulbert/Desktop/daily-learn"
 FILE_NAME = "Daily-learn.txt"
 RSS_FEEDS = ["https://hnrss.org/frontpage", "https://feeds.feedburner.com/TechCrunch/"]
 
@@ -50,45 +50,23 @@ def send_email(content):
     except Exception as e:
         logging.error(f"Failed to send email: {e}")
 
-# def update_git():
-#     try:
-#         repo = git.Repo(REPO_PATH)
-#         content = fetch_content()
-        
-#         with open(f"{REPO_PATH}/{FILE_NAME}", "a") as f:
-#             f.write(content + "\n\n")
-            
-#         repo.git.add(FILE_NAME)
-#         repo.index.commit(f"Daily auto-commit: {datetime.now().strftime('%Y-%m-%d')}")
-#         repo.remotes.origin.push()
-#         logging.info("Git push successful.")
-        
-#         send_email(content)
-#     except Exception as e:
-#         logging.error(f"Critical failure in update_git: {e}")
 def update_git():
     try:
         repo = git.Repo(REPO_PATH)
         content = fetch_content()
         
-        # 1. Pull the latest changes from the laptop
-        origin = repo.remotes.origin
-        origin.pull()
-        
-        # 2. Append and Commit
         with open(f"{REPO_PATH}/{FILE_NAME}", "a") as f:
             f.write(content + "\n\n")
             
         repo.git.add(FILE_NAME)
         repo.index.commit(f"Daily auto-commit: {datetime.now().strftime('%Y-%m-%d')}")
-        
-        # 3. Push
-        origin.push()
-        logging.info("Git pull and push successful.")
+        repo.remotes.origin.push()
+        logging.info("Git push successful.")
         
         send_email(content)
     except Exception as e:
         logging.error(f"Critical failure in update_git: {e}")
+
 if __name__ == "__main__":
     logging.info("Starting daily learning cycle.")
     update_git()
