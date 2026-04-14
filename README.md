@@ -189,3 +189,86 @@ If it says `Email sent successfully`, you have officially mastered the "Guru" wa
 **One last pro-tip:** Since this script is now a background service, if you ever change your Gmail password or rotate your App Password, remember to update that `daily-learn.service` file and run `sudo systemctl daemon-reload`.
 
 Are you ready to let this run on its own, or is there anything else you want to track in that `Daily-learn.txt` file?
+
+#Fix some git remote issues 
+This error confirms exactly why your script is currently failing: **Git is still trying to use HTTPS instead of SSH.**
+
+Even though you ran `git remote add origin git@github.com:...` earlier, Git is still referencing the old **HTTPS URL** because you likely have a local `.git/config` file that is still pointing to the HTTPS path.
+
+### 1. Fix the Remote URL
+You need to force your local repository to use the SSH protocol. Run these commands in your project folder:
+
+```bash
+# Verify what it is currently pointing to
+git remote -v
+
+# Remove the faulty HTTPS remote
+git remote remove origin
+
+# Add the correct SSH remote
+git remote add origin git@github.com:EmilioHulbert/AutoGitCommit.git
+```
+
+### 2. Verify the Change
+Run `git remote -v` again. It **must** look like this:
+```text
+origin  git@github.com:EmilioHulbert/AutoGitCommit.git (fetch)
+origin  git@github.com:EmilioHulbert/AutoGitCommit.git (push)
+```
+If you still see `https://github.com/...`, the fix didn't take.
+
+### 3. Why did this happen? (The "Guru" Logic)
+
+
+Your script uses `GitPython` to call `git push`. When you installed the repository or initialized it, it likely cached the HTTPS connection method. Because you are running the script as a `systemd` service, it doesn't have access to your personal Git credentials manager—it tries to "read" your username/password, fails because it's a headless background service, and crashes. By switching the remote to `git@github.com`, you force Git to use the **SSH protocol**, which uses your private keys instead of a username/password prompt.
+
+### 4. Final Action
+After verifying the remote URL is correct, trigger the service one last time to ensure it pushes successfully:
+
+```bash
+sudo systemctl start daily-learn.service
+cat /home/hulbert/Desktop/daily-learn/app.log
+```
+
+If the logs show `Git push successful`, you have effectively "purged" the HTTPS credential request from your system.
+
+**Did the `git remote -v` command show the correct SSH URL after you updated it?**
+
+##Fix after resetting remote origin
+26-04-14 10:45:22,980 - INFO - Cycle complete.
+2026-04-14 10:52:16,420 - INFO - Starting daily learning cycle.
+2026-04-14 10:52:18,666 - ERROR - Critical failure in update_git: Cmd('git') failed due to: exit code(128)
+  cmdline: git push --porcelain -- origin
+  stderr: 'fatal: The current branch main has no upstream branch.'
+2026-04-14 10:52:18,666 - INFO - Cycle complete.
+
+You are extremely close! The error `fatal: The current branch main has no upstream branch` is the final hurdle.
+
+When you ran `git remote remove origin` and re-added it, you effectively "reset" the link between your local `main` branch and the GitHub `main` branch. Git no longer knows that your local branch is supposed to sync with the remote one.
+
+### The Fix: Set the Upstream Branch
+Run this command once while in your project directory (`/opt/AutoGitCommit`):
+
+```bash
+git push -u origin main
+```
+
+
+
+### Why this is necessary:
+* **`git push -u`**: This is the "upstream" flag. It tells Git: "From now on, whenever I type `git push` or `git pull` while on the `main` branch, automatically use `origin main` as the destination."
+* **Why it failed in the script:** Your Python script calls `repo.remotes.origin.push()`. If the upstream isn't set, Git gets confused and halts.
+
+### One important "Guru" check
+Because you are running this as `root` (via the service), you need to make sure the **root user's SSH keys** are configured. 
+
+1.  **Check if root has the key:**
+    When you ran `ssh-keygen` earlier, you might have done it as user `hulbert`. But your service runs as `root` (or is executing from `/opt/AutoGitCommit`).
+2.  **Verify Root's Keys:**
+    Run: `sudo ls /root/.ssh/id_ed25519.pub`
+    * If that file **does not exist**, the `root` user cannot authenticate with GitHub.
+    * **The solution:** Either generate a key for root (`sudo ssh-keygen -t ed25519`) and add *that* public key to your GitHub account, **OR** (easier) change the `User=` line in your `daily-learn.service` to `User=hulbert`.
+
+**Recommendation:** Change the service user to `hulbert` (the user who created the keys) to avoid managing two sets of SSH keys.
+
+**After you run `git push -u origin main` and update the `User=` line in your service file to `User=hulbert`, restart the service again. Does the log show success?**
