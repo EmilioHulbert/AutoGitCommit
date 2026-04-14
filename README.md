@@ -161,7 +161,7 @@ sudo vi /etc/systemd/system/daily-learn.service
 Type=oneshot
 WorkingDirectory=/home/hulbert/Desktop/daily-learn
 # Add this line below, replacing 'your-app-password-here' with your actual 16-character code
-Environment="GMAIL_APP_PASS=mejactwxibyuqesu"
+Environment="GMAIL_APP_PASS=gmail_smtp_key_here"
 ExecStart=/home/hulbert/Desktop/daily-learn/venv/bin/python /home/hulbert/Desktop/daily-learn/daily_learn.py
 User=hulbert
 ```
