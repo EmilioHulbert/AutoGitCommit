@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Daily Learning Auto-Commit
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hulbert/Desktop/daily-learn
+# Add this line below, replacing 'your-app-password-here' with your actual 16-character code
+Environment="GMAIL_APP_PASS=mejactwxibyuqesu"
+ExecStart=/home/hulbert/Desktop/daily-learn/venv/bin/python /home/hulbert/Desktop/daily-learn/daily_learn.py
+User=hulbert

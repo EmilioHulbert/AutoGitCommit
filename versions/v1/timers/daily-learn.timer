@@ -1,0 +1,31 @@
+#[Unit]
+#Description=Run daily-learn every minute
+
+#[Timer]
+## Run every minute
+#OnCalendar=*:0/1
+#AccuracySec=1s
+#Persistent=true
+
+#[Install]
+#WantedBy=timers.target
+
+[Unit]
+
+Description=Run daily-learn daily
+
+
+
+[Timer]
+
+OnCalendar=daily
+
+AccuracySec=1h
+
+Persistent=true
+
+
+
+[Install]
+
+WantedBy=timers.target
